@@ -1,90 +1,92 @@
 from flask import Flask, jsonify
+from threading import Thread
 import random
 
 app = Flask(__name__)
 
+# Nomes comuns nos EUA, Canadá e México
 nomes = [
+    # EUA / Canadá
     "Tyler", "Brandon", "Ethan", "Logan", "Cameron", "Jordan", "Hunter", "Dylan",
     "Connor", "Kyle", "Jaden", "Aiden", "Zachary", "Caleb", "Austin", "Ryan",
     "Chase", "Nathan", "Jason", "Cole",
+    # México / Latinos norte-americanos
     "José", "Luis", "Carlos", "Jesús", "Miguel", "Eduardo", "Andrés", "Diego",
     "Javier", "Héctor", "Fernando", "Ramón", "Raúl", "Emilio", "Manuel", "César",
     "Marco", "Iván", "Cristian", "Ricardo"
 ]
 
 sobrenomes = [
+    # EUA / Canadá
     "Johnson", "Smith", "Brown", "Williams", "Taylor", "Anderson", "Miller", "Moore",
     "Clark", "Hall", "Young", "Hill", "Scott", "Green", "Evans", "Walker",
     "Allen", "Wright", "Mitchell", "Campbell",
+    # México / Latinos norte-americanos
     "Hernández", "García", "Martínez", "Rodríguez", "López", "Pérez", "Sánchez", "Ramírez",
     "Torres", "Flores", "Vargas", "Cruz", "Gutiérrez", "Reyes", "Castillo", "Morales",
     "Navarro", "Jiménez", "Ramos", "Mendoza"
 ]
 
-nacionalidades = [
-    "🇺🇸 Estados Unidos", "🇨🇦 Canadá", "🇲🇽 México"
+# Nacionalidades com peso maior para EUA
+nacionalidades_pesos = [
+    ("🇺🇸 Estados Unidos", 60),
+    ("🇲🇽 México", 25),
+    ("🇨🇦 Canadá", 15)
 ]
 
 posicoes = [
-    "Goleiro", "Zagueiro Central", "Lateral Direito", "Lateral Esquerdo",
-    "Volante", "Meia Central", "Meia Ofensivo", "Ponta Direita",
-    "Ponta Esquerda", "Centroavante"
+    "Goleiro", "Zagueiro", "Lateral Direito", "Lateral Esquerdo", "Volante",
+    "Meia Central", "Meia Ofensivo", "Ponta Direita", "Ponta Esquerda", "Centroavante"
 ]
 
 comparacoes = [
-    "Christian Pulisic", "Alphonso Davies", "Weston McKennie", "Jonathan David",
-    "Tyler Adams", "Ricardo Pepi", "Gio Reyna", "Brenden Aaronson",
-    "Jesús Ferreira", "Kellyn Acosta", "Tim Weah", "Miles Robinson",
-    "Héctor Herrera", "Carlos Vela", "Chicharito Hernández", "Memo Ochoa"
+    "Christian Pulisic", "Alphonso Davies", "Weston McKennie", "Gio Reyna", "Jonathan David",
+    "Hirving Lozano", "Jesús Ferreira", "Timothy Weah", "Ricardo Pepi", "Santiago Giménez",
+    "Tyler Adams", "Brenden Aaronson", "Edson Álvarez", "Diego Lainez", "Cyle Larin"
 ]
 
-cap_atual = [
-    "Reserva na NLEDF", "Titular em clube pequeno da NLEDF", "Titular em clube médio da NLEDF",
-    "Reserva em grande clube da NLEDF"
+capacidade_atual = [
+    "Reserva na Championship", "Titular na Championship",
+    "Reserva na NLEDF", "Titular na NLEDF"
 ]
 
-cap_potencial = [
-    "Titular em clube médio da NLEDF", "Titular em grande clube da NLEDF",
-    "Estrela na NLEDF", "Transferência para elite europeia"
+capacidade_potencial = [
+    "Titular na Championship", "Reserva na NLEDF", "Titular na NLEDF",
+    "Reserva em time de Champions League", "Titular em time de Champions League"
 ]
 
-@app.route("/api/jogador", methods=["GET"])
+# Estrelas: chance maior para 4 ou 5
+estrelas_pesos = [(2, 5), (3, 20), (4, 45), (5, 30)]
+
+@app.route('/')
 def gerar_jogador():
-    nome = random.choice(nomes)
-    sobrenome = random.choice(sobrenomes)
+    nome = f"{random.choice(nomes)} {random.choice(sobrenomes)}"
     nacionalidade = random.choices(
-        nacionalidades,
-        weights=[60, 20, 20],  # EUA tem mais chance
-        k=1
+        [n[0] for n in nacionalidades_pesos],
+        weights=[n[1] for n in nacionalidades_pesos]
     )[0]
     posicao = random.choice(posicoes)
     comparacao = random.choice(comparacoes)
-    atual = random.choice(cap_atual)
-    potencial = random.choice(cap_potencial)
-
-    # Distribuição das estrelas
-    chance = random.randint(1, 100)
-    if chance <= 10:
-        estrelas = 5
-    elif chance <= 35:
-        estrelas = 4
-    elif chance <= 70:
-        estrelas = 3
-    else:
-        estrelas = 2
-
-    estrelas_str = "<:sstar:1214063700886036532>" * estrelas
+    atual = random.choice(capacidade_atual)
+    potencial = random.choice(capacidade_potencial)
+    estrelas = random.choices(
+        [e[0] for e in estrelas_pesos],
+        weights=[e[1] for e in estrelas_pesos]
+    )[0]
+    estrelas_txt = "<:sstar:1214063700886036532>" * estrelas
 
     return jsonify({
-        "nome": f"{nome} {sobrenome}",
+        "nome": nome,
         "nacionalidade": nacionalidade,
-        "posição": posicao,
-        "comparação": comparacao,
-        "capacidade_atual": atual,
-        "capacidade_potencial": potencial,
-        "estrelas": estrelas_str
+        "posicao": posicao,
+        "comparacao": comparacao,
+        "cap_atual": atual,
+        "cap_potencial": potencial,
+        "estrelas": estrelas_txt
     })
 
-if __name__ == "__main__":
-    app.run(debug=True)
+def run():
+    app.run(host='0.0.0.0', port=8080)
+
+Thread(target=run).start()
 
